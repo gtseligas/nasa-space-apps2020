@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- This is a very simple example of using Web WorldWind. -->
+<!-- This is a starting page that showcases sattelites above the picked location. -->
 <html>
 <head lang="en">
   <meta charset="UTF-8">
@@ -26,8 +26,7 @@
   <script>
     var planetarium;
     var locationPicked = false;
-    var ra = [];
-    var dec = [];
+
     S(document).ready(function() {
     });
 
@@ -53,10 +52,10 @@
         wwd.navigator.range = 5000000;
 
         // example request for ISS
-        var request1 = {
+      /*  var request1 = {
              "async": true,
              "crossDomain": true,
-             "url": "https://www.n2yo.com/rest/v1/satellite/positions/25544/2/103/0/2/&apiKey=FR2XVF-WR3JRJ-Z9UGV4-4KBZ",
+             "url": "https://www.n2yo.com/rest/v1/satellite/positions/25544/3/-122/0/2/&apiKey=FR2XVF-WR3JRJ-Z9UGV4-4KBZ",
              "method": "GET"
           }
         $.ajax(request1).done(function (response) {
@@ -72,7 +71,7 @@
         var request2 = {
              "async": true,
              "crossDomain": true,
-             "url": "https://www.n2yo.com/rest/v1/satellite/positions/20580/37.10/22.10/0/2/&apiKey=FR2XVF-WR3JRJ-Z9UGV4-4KBZ",
+             "url": "https://www.n2yo.com/rest/v1/satellite/positions/20580/3/-122/0/2/&apiKey=FR2XVF-WR3JRJ-Z9UGV4-4KBZ",
              "method": "GET"
           }
         $.ajax(request2).done(function (response) {
@@ -80,7 +79,7 @@
             // fill the arrrays with a chunk of 300 future positions
             ra[1] = response.positions[1].ra;
             dec[1] = response.positions[1].dec;
-        });
+        });*/
     }
 
     // The common gesture-handling function.
@@ -103,12 +102,15 @@
 
                   // Array to store the id's of the above sattelites
                   var aboveID = [];
-                  // Requeset sattelites above picked location.
+                  // create the url for the request
+                  var url = "https://www.n2yo.com/rest/v1/satellite/above/" + position.latitude + "/" + position.longitude +
+                            "/0/90/1/&apiKey=FR2XVF-WR3JRJ-Z9UGV4-4KBZ";
+                   // Requeset sattelites above picked location.
                   // ΤO-DO :: Check that this request generates correctly the sattelites
                   var requestAbove = {
-                       "async": true,
+                       "async": false,
                        "crossDomain": true,
-                       "url": "https://www.n2yo.com/rest/v1/satellite/above/-47/-140/0/90/0/&apiKey=FR2XVF-WR3JRJ-Z9UGV4-4KBZ",
+                       "url": url,
                        "method": "GET"
                     }
                   $.ajax(requestAbove).done(function (response) {
@@ -117,47 +119,67 @@
                       var i;
                       for (i=0; i<response.above.length; i++) {
                         aboveID[i] =  response.above[i].satid;
-                        if (aboveID[i]===25544) {
-                          console.log(aboveID[i]);
-                          console.log(aboveID[i]);
+                          console.log(response.above[i].satname);
                           console.log(response.above[i].satlat);
                           console.log(response.above[i].satlng);
                           console.log(i);
-                      }
+                          console.log("-----");
                     }
                   });
 
+                  // fill these arrays with the sattelite coordinates to place them on the planetarium
+                  var ra = [];
+                  var dec = [];
+                  var name = [];
+
+                  // make a new request for every object ID you have to find its ra/dec coordinates
+                  for (var j=0; j<aboveID.length; j++) {
+                    // create the request url
+                    var requestUrl = "https://www.n2yo.com/rest/v1/satellite/positions/"
+                    +aboveID[j] + "/" + position.latitude + "/" + position.longitude + "/0/2/&apiKey=FR2XVF-WR3JRJ-Z9UGV4-4KBZ";
+
+                    var requestCoords = {
+                         "async": false,
+                         "crossDomain": true,
+                         "url": requestUrl,
+                         "method": "GET"
+                      }
+
+                      $.ajax(requestCoords).done(function (response) {
+                        ra[j] = response.positions[0].ra;
+                        dec[j] = response.positions[0].dec;
+                        name[j] = response.info.satname;
+                      });
+                  }
+
+                  // draw the planetarium
                   planetarium = S.virtualsky({
                     id: 'planetarium-div',
                     projection: 'stereo',
                     latitude: position.latitude,
                     longitude: position.longitude,
-                    clock:new Date("July 17, 2019 18:39:00 GMT")
+                    clock:new Date()
                   });
 
-                  planetarium.addPointer({
-                    'ra':ra[0],
-                    'dec':dec[0],
-                    'label':'ISS',
-                    'img':'https://media.wired.com/photos/5b52582f59269e342890a45a/1:1/w_1800,h_1800,c_limit/Satellite_FHM56J.jpg',
-                    'url':'wwdPage.html',
-                    'credit':'ISS',
-                    'colour':'rgb(255,0,0)'
-                  })
-                  planetarium.addPointer({
-                    'ra': ra[1],
-                    'dec' : dec[1],
-                    'label':'Hubble Space Telescope',
-                    'img':'https://media.wired.com/photos/5b52582f59269e342890a45a/1:1/w_1800,h_1800,c_limit/Satellite_FHM56J.jpg',
-                    'url':'wwdPage.html',
-                    'credit':'Hubble Space Telescope',
-                    'colour':'rgb(255,0,0)'
-                  })
+                  // add the sattelites to the planetarium
+
+                  for (var s=0; s<aboveID.length; s++) {
+                    planetarium.addPointer({
+                      'ra':ra[s],
+                      'dec':dec[s],
+                      'label':name[s],
+                      'img':'https://media.wired.com/photos/5b52582f59269e342890a45a/1:1/w_1800,h_1800,c_limit/Satellite_FHM56J.jpg',
+                      'url':'wwdPage.html',
+                      'credit':name[s],
+                      'colour':'rgb(255,0,0)'
+                    })
+                  }
+
+                  // change z-index of planetarium to make it visible
+                  var div = document.getElementById('planetarium-div');
+                  div.style["z-index"]="2";
                 }
             }
-            /*else {
-              wwd.goTo(new WorldWind.Position(22, 37, 3000000));
-            }*/
         };
 
         // Listen for mouse clicks.
@@ -168,3 +190,5 @@
 </script>
 </body>
 </html>
+
+       
