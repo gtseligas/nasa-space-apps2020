@@ -172,7 +172,7 @@
                           for (i=0; i<300; i++) {
                             issLat[i] = response.positions[i].satlatitude;
                             issLong[i] = response.positions[i].satlongitude;
-                            issAlt[i] = response.positions[i].sataltitude;
+                            issAlt[i] = response.positions[i].sataltitude * 1000;
                           }
                     });
                     // reset the iterations
@@ -227,3 +227,4 @@
   </body>
 
 </html>
+
