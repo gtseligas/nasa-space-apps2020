@@ -105,14 +105,14 @@
                   // create the url for the request
                   var url = "https://www.n2yo.com/rest/v1/satellite/above/" + position.latitude + "/" + position.longitude +
                             "/0/90/1/&apiKey=FR2XVF-WR3JRJ-Z9UGV4-4KBZ";
-                   // Requeset sattelites above picked location.
-                  // ΤO-DO :: Check that this request generates correctly the sattelites
+                  // Requeset sattelites above picked location.                
                   var requestAbove = {
                        "async": false,
                        "crossDomain": true,
                        "url": url,
                        "method": "GET"
-                    }
+                   }
+                  
                   $.ajax(requestAbove).done(function (response) {
                       console.log(response.info.transactionscount);
                       // fill the arrray with all the ID's of above sattelites
@@ -162,7 +162,7 @@
                   });
 
                   // add the sattelites to the planetarium
-
+                  // TO-DO :: make the link of the sattelites actually send you to see the sattelite orbit
                   for (var s=0; s<aboveID.length; s++) {
                     planetarium.addPointer({
                       'ra':ra[s],
