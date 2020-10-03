@@ -11,7 +11,7 @@
   </head>
 
   <body>
-    <button id="fast-forward" onclick="fastForwardAction">Fast Forward</button>
+    <button id="sat-view-btn" onclick="satView">Sattelites View!</button>
     <button id="rewind" onclick="rewind = true; i=0;">Rewind</button>
     <div id="wwd-div">
       <canvas id="wwd-canvas">
@@ -22,6 +22,12 @@
     <script>
       // Register an event listener to be called when the page is loaded.
       window.addEventListener("load", eventWindowLoaded, false);
+
+      // The sattelite id that this page has centered
+      var currentSat;
+      // boolean to indicate wheter I'm on sat view or third person View. Default is third person
+      var satView = false;
+
       // Create a WorldWindow for the canvas.
       var wwd = new WorldWind.WorldWindow("wwd-canvas");
 
@@ -31,18 +37,30 @@
       // it counts the number of iterations performed. Since we get the future positions from the API in chunks of 300 we have to transact with the API and
       // reset the number of iterations every time it reaches 300.
       var iteration = 0;
-      // arrays to store future future locations of the iss, so the user can press fast forward.
+      // arrays to store future future locations of the current sat, so the user can press fast forward.
       // also we dont have to call the API every second since we store future positions in the arrays.
-      var issLat=[];   //latitude
-      var issLong=[];   // longitude
-      var issAlt=[]     //altitude
+      var currLat=[];   //latitude
+      var currLong=[];   // longitude
+      var currAlt=[]     //altitude
+      var currName;      // sat name
 
 
       function eventWindowLoaded() {
+        // decode the ID from the URL.
+        var url = document.location.href,
+            params = url.split('?')[1].split('&'),
+            data = {}, tmp;
+            for (var i = 0, l = params.length; i < l; i++) {
+               tmp = params[i].split('=');
+               data[tmp[0]] = tmp[1];
+             }
+            currentSat = data.id;
+
+        // make a request for current sat
         var request = {
              "async": false,
              "crossDomain": true,
-             "url": "https://www.n2yo.com/rest/v1/satellite/positions/25544/37.10/22.10/0/300/&apiKey=FR2XVF-WR3JRJ-Z9UGV4-4KBZ",
+             "url": "https://www.n2yo.com/rest/v1/satellite/positions/" + currentSat + "/37.10/22.10/0/300/&apiKey=FR2XVF-WR3JRJ-Z9UGV4-4KBZ",
              "method": "GET"
           }
         $.ajax(request).done(function (response) {
@@ -50,10 +68,11 @@
             // fill the arrrays with a chunk of 300 future positions
             var i;
             for (i = 0; i < 300; i++) {
-              issLat[i] = response.positions[i].satlatitude;
-              issLong[i] = response.positions[i].satlongitude;
-              issAlt[i] = response.positions[i].sataltitude * 1000; //convert km to m
+              currLat[i] = response.positions[i].satlatitude;
+              currLong[i] = response.positions[i].satlongitude;
+              currAlt[i] = response.positions[i].sataltitude * 1000; //convert km to m
             }
+            currName = response.info.satname;
         });
 
           // Add some image layers to the WorldWindow's globe.
@@ -62,7 +81,7 @@
           // create placemarks. currently only the first placemark corresponds to an actual sattalite with a position that is being updated in real time.
           // The rest are just placeholders.
           var placemarkLayer = new WorldWind.RenderableLayer("Placemarks");
-          var sat1 = new WorldWind.Placemark(new WorldWind.Position(issLat[0], issLong[0] , issAlt[0]), true);
+          var sat1 = new WorldWind.Placemark(new WorldWind.Position(currLat[0], currLong[0] , currAlt[0]), true);
           var sat2 = new WorldWind.Placemark(new WorldWind.Position(20, 30, 500000), true);
           var sat3 = new WorldWind.Placemark(new WorldWind.Position(15, 67, 500000), true);
           var sat4 = new WorldWind.Placemark(new WorldWind.Position(32, 5, 500000), true);
@@ -72,7 +91,7 @@
           var sat8 = new WorldWind.Placemark(new WorldWind.Position(10, 37, 500000), true);
           var sat9 = new WorldWind.Placemark(new WorldWind.Position(42, 17, 500000), true);
           var sat10 = new WorldWind.Placemark(new WorldWind.Position(17, 42, 50000), true);
-          sat1.label = "ISS1";
+          sat1.label = currName;
           sat2.label = "ISS2";
           sat3.label = "name3";
           sat4.label = "name4";
@@ -86,7 +105,7 @@
           var attributes = sat1.attributes;
           attributes.drawLeaderLine = true;
           attributes.labelAttributes.color = WorldWind.Color.YELLOW;
-          attributes.imageSource = "satellite.png";
+          attributes.imageSource = "sattelite.png";
           attributes.labelAttributes.offset = new WorldWind.Offset(
             WorldWind.OFFSET_FRACTION, 0.5,
             WorldWind.OFFSET_FRACTION, -1.0);
@@ -170,19 +189,19 @@
                           console.log(response.info.satname);
                           var i=0;
                           for (i=0; i<300; i++) {
-                            issLat[i] = response.positions[i].satlatitude;
-                            issLong[i] = response.positions[i].satlongitude;
-                            issAlt[i] = response.positions[i].sataltitude * 1000;
+                            currLat[i] = response.positions[i].satlatitude;
+                            currLong[i] = response.positions[i].satlongitude;
+                            currAlt[i] = response.positions[i].sataltitude * 1000;
                           }
                     });
                     // reset the iterations
                     iteration = 0;
                 }
-                sat1.position = new WorldWind.Position(issLat[iteration], issLong[iteration], issAlt[iteration]);
-                wwd.goTo(new WorldWind.Position(sat1.position.latitude, sat1.position.longitude, issAlt[iteration]*6));
+                sat1.position = new WorldWind.Position(currLat[iteration], currLong[iteration], currAlt[iteration]);
+                wwd.goTo(new WorldWind.Position(sat1.position.latitude, sat1.position.longitude, currAlt[iteration]*6));
               }
               iteration++;                    //  increment the counter
-              if (true) {
+              if (!satView) {
                 myLoop();             //  ..  again which will trigger another
               }                       //  ..  setTimeout()
             }, DELAY)
@@ -219,12 +238,15 @@
           // Listen for taps on mobile devices.
           var tapRecognizer = new WorldWind.TapRecognizer(wwd, handleClick);
 
-          // TO-DO //
-          function fastForwardAction() {
-            DELAY=1;
-          }
+          // TO-DO
+          // takes to user to see from the sats location
+      /*    function satView() {
+            satview = true;
+            document.getElementById("sat-view-btn").
+          } */
   </script>
   </body>
 
 </html>
+
 
