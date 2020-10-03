@@ -131,6 +131,9 @@
                   var ra = [];
                   var dec = [];
                   var name = [];
+                  // fill these arrays to pass coordinates to the gyroscope
+                  var az = [];
+                  var alt = [];
 
                   // make a new request for every object ID you have to find its ra/dec coordinates
                   for (var j=0; j<aboveID.length; j++) {
@@ -149,6 +152,8 @@
                         ra[j] = response.positions[0].ra;
                         dec[j] = response.positions[0].dec;
                         name[j] = response.info.satname;
+                        az[j] = response.positions[0].azimuth;
+                        alt[j] = response.positions[0].elevation;
                       });
                   }
 
@@ -168,10 +173,18 @@
                     var myURL;
                     // TO-DO ::
                     // insert condition isUnlocked(aboveID[s]) here
-                    if (true)
-                      myURL = "wwdPage.html";
-                    else
-                      myURL ="checkVisibility.html";
+                    if (false) {
+                      // Create the URL. Encode satellite ID for the next page to draw him.
+                      myURL = "wwdPage.html?id=" + encodeURIComponent(aboveID[s]);
+                    }
+                    else {
+                      // pass to the gyroscope az, alt, id, and observer coordinates
+                      // TO-DO:: The ui is overloaded by api calls. better give the gyroscope only the id to avoid using extra arrays az and alt. We'll see that.
+                      myURL ="checkVisibility.html?id=" + encodeURIComponent(aboveID[s]) + "?az=" + encodeURIComponent(az[s]) + "?alt=" + encodeURIComponent(alt[s])
+                              + "?lat=" + encodeURIComponent(position.latitude) + "?long=" + encodeURIComponent(position.longitude);
+                      console.log(encodeURIComponent(aboveID[s]) + " " + encodeURIComponent(az[s]) + " " + encodeURIComponent(alt[s]) + " " +
+                              encodeURIComponent(position.latitude) + " " + encodeURIComponent(position.longitude));
+                    }
                     planetarium.addPointer({
                       'ra':ra[s],
                       'dec':dec[s],
@@ -200,6 +213,8 @@
 </script>
 </body>
 </html>
+
+       
 
 
        
